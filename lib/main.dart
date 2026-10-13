@@ -1233,43 +1233,53 @@ class _InventoryScreenState extends State<InventoryScreen> {
         ],
       ),
 
-      // Dual Action Floating Buttons: Add Category & Add Product
+      // Dual Action Floating Buttons: Add Category & Add Product (Compact & Sleek)
       floatingActionButton: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // 1. Add Category Button
-          FloatingActionButton.extended(
-            heroTag: 'add_category_fab',
-            onPressed: () => _openAddCategoryDialog(),
-            backgroundColor: const Color(0xFF0F172A),
-            foregroundColor: const Color(0xFF38BDF8),
-            elevation: 6,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: const BorderSide(color: Color(0xFF2563EB), width: 1.2),
-            ),
-            icon: const Icon(Icons.create_new_folder_rounded, size: 18),
-            label: const Text(
-              'Add Category',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          // 1. Add Category Button (Proportionately Compact)
+          SizedBox(
+            height: 38,
+            child: FloatingActionButton.extended(
+              heroTag: 'add_category_fab',
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              extendedPadding: const EdgeInsets.symmetric(horizontal: 11),
+              onPressed: () => _openAddCategoryDialog(),
+              backgroundColor: const Color(0xFF0F172A),
+              foregroundColor: const Color(0xFF38BDF8),
+              elevation: 4,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: Color(0xFF2563EB), width: 1.0),
+              ),
+              icon: const Icon(Icons.create_new_folder_rounded, size: 15),
+              label: const Text(
+                'Add Category',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5),
+              ),
             ),
           ),
-          const SizedBox(width: 10),
-          // 2. Add Product Button
-          FloatingActionButton.extended(
-            heroTag: 'add_product_fab',
-            onPressed: _openAddProductDialog,
-            backgroundColor: const Color(0xFF2563EB),
-            foregroundColor: Colors.white,
-            elevation: 8,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-              side: const BorderSide(color: Color(0xFF38BDF8), width: 1),
-            ),
-            icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
-            label: const Text(
-              'Add Product',
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+          const SizedBox(width: 8),
+          // 2. Add Product Button (Proportionately Compact)
+          SizedBox(
+            height: 38,
+            child: FloatingActionButton.extended(
+              heroTag: 'add_product_fab',
+              materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              extendedPadding: const EdgeInsets.symmetric(horizontal: 13),
+              onPressed: _openAddProductDialog,
+              backgroundColor: const Color(0xFF2563EB),
+              foregroundColor: Colors.white,
+              elevation: 5,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+                side: const BorderSide(color: Color(0xFF38BDF8), width: 0.8),
+              ),
+              icon: const Icon(Icons.add_shopping_cart_rounded, size: 15),
+              label: const Text(
+                'Add Product',
+                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 11.5),
+              ),
             ),
           ),
         ],
@@ -1599,7 +1609,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 85),
+                    padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 65),
                     itemCount: filteredProducts.length,
                     itemBuilder: (context, index) {
                       final product = filteredProducts[index];
