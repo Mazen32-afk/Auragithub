@@ -1,0 +1,143 @@
+import { Product } from '../types';
+
+export const INITIAL_PRODUCTS: Product[] = [
+  {
+    id: 'prod-1',
+    name: 'Aura Pro Studio Headphones',
+    barcode: '890123456012',
+    category: 'Audio Gear',
+    quantity: 14,
+    price: 349.99,
+    unit: 'units',
+    minThreshold: 5,
+    description: 'Gold-plated drivers with active noise cancellation and obsidian matte finish.',
+    updatedAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+  },
+  {
+    id: 'prod-2',
+    name: 'Chronos Mechanical Chronograph',
+    barcode: '890123456029',
+    category: 'Timepieces',
+    quantity: 3, // < 5: Low stock!
+    price: 1250.00,
+    unit: 'units',
+    minThreshold: 5,
+    description: 'Automatic skeleton watch with amber sapphire crystal and 18k rose gold bezel.',
+    updatedAt: new Date(Date.now() - 3600000 * 8).toISOString(),
+  },
+  {
+    id: 'prod-3',
+    name: 'Titanium Ergonomic Mechanical Keyboard',
+    barcode: '890123456036',
+    category: 'Peripherals',
+    quantity: 2, // < 5: Low stock!
+    price: 289.50,
+    unit: 'units',
+    minThreshold: 5,
+    description: 'Gasket-mounted hot-swap keyboard with custom brass weight and orange accents.',
+    updatedAt: new Date(Date.now() - 3600000 * 12).toISOString(),
+  },
+  {
+    id: 'prod-4',
+    name: 'Vanguard 4K Cinema Lens 50mm f/1.2',
+    barcode: '890123456043',
+    category: 'Optics',
+    quantity: 1, // < 5: Critical low stock!
+    price: 1890.00,
+    unit: 'units',
+    minThreshold: 5,
+    description: 'Anamorphic cinema prime with gold coated aperture blades and zero chromatic aberration.',
+    updatedAt: new Date(Date.now() - 3600000 * 24).toISOString(),
+  },
+  {
+    id: 'prod-5',
+    name: 'Solarium Portable Power Station 1200W',
+    barcode: '890123456050',
+    category: 'Power & Tech',
+    quantity: 18,
+    price: 799.00,
+    unit: 'units',
+    minThreshold: 5,
+    description: 'Fast-charging LiFePO4 battery pack with solar input and smart telemetry display.',
+    updatedAt: new Date(Date.now() - 3600000 * 5).toISOString(),
+  },
+  {
+    id: 'prod-6',
+    name: 'Apex Precision Wireless Mouse',
+    barcode: '890123456067',
+    category: 'Peripherals',
+    quantity: 42,
+    price: 119.00,
+    unit: 'units',
+    minThreshold: 5,
+    description: 'Magnesium alloy ultralight body with 30k optical sensor and golden scroll wheel.',
+    updatedAt: new Date(Date.now() - 3600000 * 18).toISOString(),
+  },
+  {
+    id: 'prod-7',
+    name: 'Amber Glow Acoustic Tube Amplifier',
+    barcode: '890123456074',
+    category: 'Audio Gear',
+    quantity: 4, // < 5: Low stock!
+    price: 649.99,
+    unit: 'units',
+    minThreshold: 5,
+    description: 'Dual triode vacuum tube preamp with warm harmonic saturation and brass chassis.',
+    updatedAt: new Date(Date.now() - 3600000 * 30).toISOString(),
+  },
+  {
+    id: 'prod-8',
+    name: 'HyperDrive USB4 Multiport Dock',
+    barcode: '890123456081',
+    category: 'Peripherals',
+    quantity: 26,
+    price: 179.50,
+    unit: 'units',
+    minThreshold: 5,
+    description: '40Gbps dual 4K display output with 100W PD passthrough and anodized shell.',
+    updatedAt: new Date(Date.now() - 3600000 * 15).toISOString(),
+  },
+  {
+    id: 'prod-9',
+    name: 'Helios Carbon Fiber Drone 6K',
+    barcode: '890123456098',
+    category: 'Optics',
+    quantity: 0, // Out of stock & < 5!
+    price: 1450.00,
+    unit: 'units',
+    minThreshold: 5,
+    description: 'Triple-axis gimbal drone with obstacle avoidance and 45-minute flight time.',
+    updatedAt: new Date(Date.now() - 3600000 * 48).toISOString(),
+  },
+  {
+    id: 'prod-10',
+    name: 'Lumina OLED Drawing Tablet 16-inch',
+    barcode: '890123456104',
+    category: 'Peripherals',
+    quantity: 11,
+    price: 899.00,
+    unit: 'units',
+    minThreshold: 5,
+    description: '4K stylus display with 8192 pressure levels and 100% DCI-P3 color gamut.',
+    updatedAt: new Date(Date.now() - 3600000 * 6).toISOString(),
+  }
+];
+
+export const AVAILABLE_CURRENCIES = [
+  { code: 'USD', symbol: '$', name: 'US Dollar' },
+  { code: 'EUR', symbol: '€', name: 'Euro' },
+  { code: 'GBP', symbol: '£', name: 'British Pound' },
+  { code: 'EGP', symbol: 'E£', name: 'Egyptian Pound' },
+  { code: 'CAD', symbol: 'CA$', name: 'Canadian Dollar' },
+  { code: 'AED', symbol: 'AED', name: 'UAE Dirham' },
+];
+
+export const PRODUCT_CATEGORIES = [
+  'Audio Gear',
+  'Timepieces',
+  'Peripherals',
+  'Optics',
+  'Power & Tech',
+  'Wearables',
+  'Storage'
+];

@@ -1,0 +1,6 @@
+{
+  "name": "AuraStock - Inventory Management",
+  "description": "Dark mode inventory management system featuring real-time financial valuation, bulk adjustments, barcode lookup, low-stock alerts, and CSV/PDF reports.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
