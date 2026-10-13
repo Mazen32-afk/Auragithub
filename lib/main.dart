@@ -4,6 +4,7 @@
 // ====================================================================
 
 import 'dart:io';
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -22,6 +23,26 @@ void main() {
   ));
   runApp(const AuraStockApp());
 }
+
+class CurrencyOption {
+  final String code;
+  final String symbol;
+  final String name;
+
+  const CurrencyOption({
+    required this.code,
+    required this.symbol,
+    required this.name,
+  });
+}
+
+const List<CurrencyOption> CURRENCIES = [
+  CurrencyOption(code: 'USD', symbol: '\$', name: 'USD - Dollar (\$)'),
+  CurrencyOption(code: 'EGP', symbol: 'EGP ', name: 'EGP - Egyptian Pound (ج.م)'),
+  CurrencyOption(code: 'EUR', symbol: '€', name: 'EUR - Euro (€)'),
+  CurrencyOption(code: 'SAR', symbol: 'SAR ', name: 'SAR - Saudi Riyal (ر.س)'),
+  CurrencyOption(code: 'AED', symbol: 'AED ', name: 'AED - UAE Dirham (د.إ)'),
+];
 
 class Product {
   final String id;
@@ -56,13 +77,13 @@ class AuraStockApp extends StatelessWidget {
       darkTheme: ThemeData(
         brightness: Brightness.dark,
         scaffoldBackgroundColor: const Color(0xFF0B0E14),
-        primaryColor: const Color(0xFFF59E0B), // Warm Gold
+        primaryColor: const Color(0xFFF59E0B),
         colorScheme: const ColorScheme.dark(
-          primary: Color(0xFFF59E0B), // Gold
-          secondary: Color(0xFFEA580C), // Orange
+          primary: Color(0xFFF59E0B),
+          secondary: Color(0xFFEA580C),
           surface: Color(0xFF141923),
           surfaceContainer: Color(0xFF1B2230),
-          error: Color(0xFFEF4444), // Low stock Red alert
+          error: Color(0xFFEF4444),
         ),
         fontFamily: 'Roboto',
       ),
@@ -81,6 +102,16 @@ class InventoryScreen extends StatefulWidget {
 class _InventoryScreenState extends State<InventoryScreen> {
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
+  CurrencyOption _selectedCurrency = CURRENCIES[0]; // Default USD, switchable to EGP
+
+  final List<String> _categories = [
+    'Audio Gear',
+    'Timepieces',
+    'Peripherals',
+    'Optics',
+    'Power & Tech',
+    'General',
+  ];
 
   final List<Product> _products = [
     Product(
@@ -96,7 +127,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       name: 'Chronos Mechanical Chronograph',
       barcode: '890123456029',
       category: 'Timepieces',
-      quantity: 3, // < 5 -> Triggers RED row styling!
+      quantity: 3,
       price: 1250.00,
     ),
     Product(
@@ -104,7 +135,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       name: 'Titanium Ergonomic Keyboard',
       barcode: '890123456036',
       category: 'Peripherals',
-      quantity: 2, // < 5 -> Triggers RED row styling!
+      quantity: 2,
       price: 289.50,
     ),
     Product(
@@ -112,7 +143,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
       name: 'Vanguard 4K Cinema Lens 50mm',
       barcode: '890123456043',
       category: 'Optics',
-      quantity: 1, // < 5 -> Triggers RED row styling!
+      quantity: 1,
       price: 1890.00,
     ),
     Product(
@@ -133,7 +164,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
     ),
   ];
 
-  // 1. Total Financial Value Calculation
   double get totalFinancialValue {
     return _products.fold(0.0, (sum, item) => sum + item.totalValue);
   }
@@ -150,13 +180,16 @@ class _InventoryScreenState extends State<InventoryScreen> {
         return p.name.toLowerCase().contains(q) || p.barcode.contains(q);
       }).toList();
     }
-    // Priority: Alphabetical ordering (A-Z)
     final sorted = List<Product>.from(list);
     sorted.sort((a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()));
     return sorted;
   }
 
-  // 3. Increment & Decrement Stock
+  String _formatPrice(double value) {
+    final formatter = NumberFormat('#,##0.00');
+    return '${_selectedCurrency.symbol}${formatter.format(value)}';
+  }
+
   void _incrementQuantity(Product product) {
     setState(() {
       product.quantity += 1;
@@ -174,7 +207,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
     }
   }
 
-  // Android Heads-Up Notification System for Low Stock (< 5)
   void _triggerAndroidLowStockNotification(Product product) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -211,7 +243,274 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
-  // Add Category Dialog
+  void _openAddProductDialog() {
+    final nameController = TextEditingController();
+    final barcodeController = TextEditingController();
+    final priceController = TextEditingController();
+    final qtyController = TextEditingController(text: '10');
+    String selectedCat = _categories.first;
+    final rand = Random();
+    barcodeController.text = '890${rand.nextInt(900000000) + 100000000}';
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF141923),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 20,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
+              ),
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 4,
+                        decoration: BoxDecoration(
+                          color: Colors.white24,
+                          borderRadius: BorderRadius.circular(2),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEA580C).withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(Icons.add_box_rounded, color: Color(0xFFF59E0B)),
+                        ),
+                        const SizedBox(width: 12),
+                        const Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Add New Product',
+                              style: TextStyle(
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFF59E0B),
+                              ),
+                            ),
+                            Text(
+                              'Fill details to register into inventory',
+                              style: TextStyle(color: Colors.white54, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: nameController,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: InputDecoration(
+                        labelText: 'Product Name *',
+                        labelStyle: const TextStyle(color: Colors.white70),
+                        prefixIcon: const Icon(Icons.shopping_bag_outlined, color: Color(0xFFF59E0B)),
+                        filled: true,
+                        fillColor: const Color(0xFF1B2230),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: barcodeController,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: 'Barcode / SKU *',
+                              labelStyle: const TextStyle(color: Colors.white70),
+                              prefixIcon: const Icon(Icons.qr_code_scanner, color: Color(0xFFF59E0B)),
+                              filled: true,
+                              fillColor: const Color(0xFF1B2230),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        IconButton.filledTonal(
+                          tooltip: 'Generate Barcode',
+                          style: IconButton.styleFrom(
+                            backgroundColor: const Color(0xFF1B2230),
+                            foregroundColor: const Color(0xFFF59E0B),
+                          ),
+                          icon: const Icon(Icons.autorenew),
+                          onPressed: () {
+                            setModalState(() {
+                              barcodeController.text = '890${rand.nextInt(900000000) + 100000000}';
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF1B2230),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: DropdownButtonHideUnderline(
+                        child: DropdownButton<String>(
+                          value: selectedCat,
+                          isExpanded: true,
+                          dropdownColor: const Color(0xFF1B2230),
+                          icon: const Icon(Icons.arrow_drop_down, color: Color(0xFFF59E0B)),
+                          style: const TextStyle(color: Colors.white, fontSize: 14),
+                          items: _categories.map((cat) {
+                            return DropdownMenuItem<String>(
+                              value: cat,
+                              child: Text(cat),
+                            );
+                          }).toList(),
+                          onChanged: (val) {
+                            if (val != null) {
+                              setModalState(() {
+                                selectedCat = val;
+                              });
+                            }
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: priceController,
+                            keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: 'Price (${_selectedCurrency.symbol}) *',
+                              labelStyle: const TextStyle(color: Colors.white70),
+                              prefixIcon: const Icon(Icons.attach_money, color: Color(0xFFF59E0B)),
+                              filled: true,
+                              fillColor: const Color(0xFF1B2230),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: TextField(
+                            controller: qtyController,
+                            keyboardType: TextInputType.number,
+                            style: const TextStyle(color: Colors.white),
+                            decoration: InputDecoration(
+                              labelText: 'Initial Qty *',
+                              labelStyle: const TextStyle(color: Colors.white70),
+                              prefixIcon: const Icon(Icons.numbers, color: Color(0xFFEA580C)),
+                              filled: true,
+                              fillColor: const Color(0xFF1B2230),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide.none,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: Colors.white70,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              side: const BorderSide(color: Colors.white24),
+                            ),
+                            onPressed: () => Navigator.pop(context),
+                            child: const Text('Cancel'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFFEA580C),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            onPressed: () {
+                              final name = nameController.text.trim();
+                              final barcode = barcodeController.text.trim();
+                              final price = double.tryParse(priceController.text) ?? 0.0;
+                              final qty = int.tryParse(qtyController.text) ?? 0;
+
+                              if (name.isEmpty) {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(content: Text('Please enter a product name')),
+                                );
+                                return;
+                              }
+
+                              setState(() {
+                                _products.insert(
+                                  0,
+                                  Product(
+                                    id: DateTime.now().millisecondsSinceEpoch.toString(),
+                                    name: name,
+                                    barcode: barcode.isNotEmpty ? barcode : '890000000000',
+                                    category: selectedCat,
+                                    quantity: qty,
+                                    price: price,
+                                  ),
+                                );
+                              });
+
+                              Navigator.pop(context);
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                SnackBar(
+                                  backgroundColor: const Color(0xFF141923),
+                                  content: Text('Product "$name" added successfully! 🎉'),
+                                ),
+                              );
+                            },
+                            child: const Text('Save Product', style: TextStyle(fontWeight: FontWeight.bold)),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   void _openAddCategoryDialog() {
     final catController = TextEditingController();
     showDialog(
@@ -237,7 +536,16 @@ class _InventoryScreenState extends State<InventoryScreen> {
             ElevatedButton(
               style: ElevatedButton.styleFrom(backgroundColor: const Color(0xFFEA580C)),
               onPressed: () {
-                if (catController.text.trim().isNotEmpty) {
+                final cat = catController.text.trim();
+                if (cat.isNotEmpty && !_categories.contains(cat)) {
+                  setState(() {
+                    _categories.add(cat);
+                  });
+                  Navigator.pop(context);
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(content: Text('Category "$cat" added!')),
+                  );
+                } else {
                   Navigator.pop(context);
                 }
               },
@@ -249,7 +557,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
-  // 3. Bulk Adjustment Bottom Sheet
   void _openBulkAdjustSheet(Product product) {
     final qtyController = TextEditingController(text: product.quantity.toString());
     showModalBottomSheet(
@@ -281,12 +588,12 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              Text(
+              const Text(
                 'Bulk Stock Adjustment',
                 style: TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
-                  color: const Color(0xFFF59E0B),
+                  color: Color(0xFFF59E0B),
                 ),
               ),
               const SizedBox(height: 4),
@@ -354,10 +661,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
-  // 6. CSV & PDF Export
   Future<void> _exportCSV() async {
     final buffer = StringBuffer();
-    buffer.writeln('Barcode,Name,Category,Quantity,Price,TotalValue');
+    buffer.writeln('Barcode,Name,Category,Quantity,Price(${_selectedCurrency.code}),TotalValue(${_selectedCurrency.code})');
     for (var p in _products) {
       buffer.writeln('${p.barcode},"${p.name}",${p.category},${p.quantity},${p.price},${p.totalValue}');
     }
@@ -381,7 +687,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 child: pw.Text('AuraStock Inventory Valuation Report',
                   style: pw.TextStyle(fontSize: 22, fontWeight: pw.FontWeight.bold)),
               ),
-              pw.Text('Total Valuation: \$' + NumberFormat('#,##0.00').format(totalFinancialValue)),
+              pw.Text('Total Valuation: ${_formatPrice(totalFinancialValue)}'),
               pw.SizedBox(height: 20),
               pw.Table.fromTextArray(
                 headers: ['Barcode', 'Product', 'Qty', 'Price', 'Value'],
@@ -389,8 +695,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
                   p.barcode,
                   p.name,
                   p.quantity.toString(),
-                  '\$' + p.price.toStringAsFixed(2),
-                  '\$' + p.totalValue.toStringAsFixed(2),
+                  _formatPrice(p.price),
+                  _formatPrice(p.totalValue),
                 ]).toList(),
               ),
             ],
@@ -406,8 +712,6 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final currencyFormatter = NumberFormat.currency(symbol: '\$', decimalDigits: 2);
-
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF0B0E14),
@@ -422,7 +726,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
               ),
               child: const Icon(Icons.inventory_2, color: Color(0xFFF59E0B), size: 20),
             ),
-            const SizedBox(width: 10),
+            const SizedBox(width: 8),
             const Text(
               'AuraStock',
               style: TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
@@ -430,23 +734,146 @@ class _InventoryScreenState extends State<InventoryScreen> {
           ],
         ),
         actions: [
+          // Currency Selector Button (USD / EGP / EUR / SAR / AED)
+          PopupMenuButton<CurrencyOption>(
+            tooltip: 'Change Currency',
+            initialValue: _selectedCurrency,
+            onSelected: (CurrencyOption curr) {
+              setState(() {
+                _selectedCurrency = curr;
+              });
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  duration: const Duration(seconds: 1),
+                  content: Text('Currency changed to ${curr.name}'),
+                ),
+              );
+            },
+            color: const Color(0xFF141923),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: Color(0xFFF59E0B), width: 0.8),
+            ),
+            child: Container(
+              margin: const EdgeInsets.symmetric(vertical: 10, horizontal: 4),
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [Color(0xFF1B2230), Color(0xFF141923)],
+                ),
+                borderRadius: BorderRadius.circular(10),
+                border: Border.all(color: const Color(0xFFF59E0B).withOpacity(0.5)),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    _selectedCurrency.code,
+                    style: const TextStyle(
+                      color: Color(0xFFF59E0B),
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
+                  const SizedBox(width: 2),
+                  const Icon(Icons.arrow_drop_down, color: Color(0xFFF59E0B), size: 16),
+                ],
+              ),
+            ),
+            itemBuilder: (context) => CURRENCIES.map((c) => PopupMenuItem<CurrencyOption>(
+              value: c,
+              child: Row(
+                children: [
+                  Container(
+                    width: 32,
+                    alignment: Alignment.centerLeft,
+                    child: Text(
+                      c.symbol.trim(),
+                      style: const TextStyle(
+                        color: Color(0xFFF59E0B),
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    c.name,
+                    style: TextStyle(
+                      color: _selectedCurrency.code == c.code ? const Color(0xFFEA580C) : Colors.white,
+                      fontWeight: _selectedCurrency.code == c.code ? FontWeight.bold : FontWeight.normal,
+                    ),
+                  ),
+                ],
+              ),
+            )).toList(),
+          ),
+
+          // Add Product icon in AppBar
+          IconButton(
+            tooltip: 'Add Product',
+            icon: const Icon(Icons.add_circle, color: Color(0xFFEA580C), size: 22),
+            onPressed: _openAddProductDialog,
+          ),
+
+          // Add Category
           IconButton(
             tooltip: 'Add Category',
-            icon: const Icon(Icons.create_new_folder_outlined, color: Color(0xFFF59E0B)),
+            icon: const Icon(Icons.create_new_folder_outlined, color: Color(0xFFF59E0B), size: 20),
             onPressed: _openAddCategoryDialog,
           ),
-          IconButton(
-            tooltip: 'Export CSV',
-            icon: const Icon(Icons.table_view_outlined, color: Color(0xFFF59E0B)),
-            onPressed: _exportCSV,
-          ),
-          IconButton(
-            tooltip: 'Export PDF',
-            icon: const Icon(Icons.picture_as_pdf_outlined, color: Color(0xFFEA580C)),
-            onPressed: _exportPDF,
+
+          // Export Reports Menu (CSV & PDF)
+          PopupMenuButton<String>(
+            tooltip: 'Export Reports',
+            icon: const Icon(Icons.download_rounded, color: Colors.white70, size: 20),
+            color: const Color(0xFF141923),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: Color(0xFFF59E0B), width: 0.5),
+            ),
+            onSelected: (val) {
+              if (val == 'csv') _exportCSV();
+              if (val == 'pdf') _exportPDF();
+            },
+            itemBuilder: (context) => [
+              const PopupMenuItem(
+                value: 'csv',
+                child: Row(
+                  children: [
+                    Icon(Icons.table_view_outlined, color: Color(0xFFF59E0B), size: 18),
+                    SizedBox(width: 10),
+                    Text('Export as CSV', style: TextStyle(color: Colors.white)),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                value: 'pdf',
+                child: Row(
+                  children: [
+                    Icon(Icons.picture_as_pdf_outlined, color: Color(0xFFEA580C), size: 18),
+                    SizedBox(width: 10),
+                    Text('Export as PDF', style: TextStyle(color: Colors.white)),
+                  ],
+                ),
+              ),
+            ],
           ),
         ],
       ),
+
+      // Prominent Floating Action Button for Add Product
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: _openAddProductDialog,
+        backgroundColor: const Color(0xFFEA580C),
+        foregroundColor: Colors.white,
+        elevation: 6,
+        icon: const Icon(Icons.add_shopping_cart_rounded, size: 20),
+        label: const Text(
+          'Add Product',
+          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+        ),
+      ),
+
       body: Column(
         children: [
           // 1. Dashboard: Total Financial Valuation
@@ -471,14 +898,34 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    const Text(
-                      'TOTAL INVENTORY VALUATION',
-                      style: TextStyle(
-                        fontSize: 11,
-                        letterSpacing: 1.2,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFFF59E0B),
-                      ),
+                    Row(
+                      children: [
+                        const Text(
+                          'TOTAL INVENTORY VALUATION',
+                          style: TextStyle(
+                            fontSize: 11,
+                            letterSpacing: 1.2,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xFFF59E0B),
+                          ),
+                        ),
+                        const SizedBox(width: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFF59E0B).withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            _selectedCurrency.code,
+                            style: const TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFF59E0B),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                     if (lowStockCount > 0)
                       Container(
@@ -501,7 +948,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  currencyFormatter.format(totalFinancialValue),
+                  _formatPrice(totalFinancialValue),
                   style: const TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.w800,
@@ -563,17 +1010,16 @@ class _InventoryScreenState extends State<InventoryScreen> {
           // 2 & 4. Product List with Red Color for Qty < 5
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+              padding: const EdgeInsets.only(left: 16, right: 16, top: 6, bottom: 80),
               itemCount: filteredProducts.length,
               itemBuilder: (context, index) {
                 final product = filteredProducts[index];
-                final isLow = product.quantity < 5; // Requirement 4: Below 5 check
+                final isLow = product.quantity < 5;
 
                 return Container(
                   margin: const EdgeInsets.only(bottom: 10),
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    // Requirement 4: Automatic RED color for quantity drops below 5
                     color: isLow
                         ? const Color(0xFF381014) // Deep Red Tint
                         : const Color(0xFF141923), // Dark Slate
@@ -634,20 +1080,29 @@ class _InventoryScreenState extends State<InventoryScreen> {
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  'Price: ${currencyFormatter.format(product.price)} • Line: ${currencyFormatter.format(product.totalValue)}',
-                                  style: TextStyle(
+                                  'Price: ${_formatPrice(product.price)} • Line: ${_formatPrice(product.totalValue)}',
+                                  style: const TextStyle(
                                     fontSize: 12,
                                     fontWeight: FontWeight.w600,
-                                    color: const Color(0xFFF59E0B),
+                                    color: Color(0xFFF59E0B),
                                   ),
                                 ),
                               ],
                             ),
                           ),
+                          // Delete action button
+                          IconButton(
+                            icon: const Icon(Icons.delete_outline, size: 18, color: Colors.white30),
+                            onPressed: () {
+                              setState(() {
+                                _products.removeWhere((p) => p.id == product.id);
+                              });
+                            },
+                          ),
                         ],
                       ),
                       const SizedBox(height: 12),
-                      // 3. Stepper and Bulk Adjustment field
+                      // Stepper and Bulk Adjustment field
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
