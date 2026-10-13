@@ -447,32 +447,57 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    // Category Dropdown
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1E293B),
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<String>(
-                          value: selectedCat,
-                          isExpanded: true,
-                          dropdownColor: const Color(0xFF1E293B),
-                          style: const TextStyle(color: Colors.white),
-                          items: _categories.where((c) => c != 'All').map((cat) {
-                            return DropdownMenuItem<String>(
-                              value: cat,
-                              child: Text(cat),
-                            );
-                          }).toList(),
-                          onChanged: (val) {
-                            if (val != null) {
-                              setModalState(() => selectedCat = val);
-                            }
-                          },
+                    // Category Dropdown with Quick + Add Category Button
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF1E293B),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: DropdownButtonHideUnderline(
+                              child: DropdownButton<String>(
+                                value: selectedCat,
+                                isExpanded: true,
+                                dropdownColor: const Color(0xFF1E293B),
+                                style: const TextStyle(color: Colors.white),
+                                items: _categories.where((c) => c != 'All').map((cat) {
+                                  return DropdownMenuItem<String>(
+                                    value: cat,
+                                    child: Text(cat),
+                                  );
+                                }).toList(),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    setModalState(() => selectedCat = val);
+                                  }
+                                },
+                              ),
+                            ),
+                          ),
                         ),
-                      ),
+                        const SizedBox(width: 8),
+                        ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1E293B),
+                            foregroundColor: const Color(0xFF38BDF8),
+                            side: const BorderSide(color: Color(0xFF2563EB), width: 1),
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 14),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          onPressed: () {
+                            _openAddCategoryDialog((newCat) {
+                              setModalState(() {
+                                selectedCat = newCat;
+                              });
+                            });
+                          },
+                          icon: const Icon(Icons.create_new_folder_rounded, size: 16),
+                          label: const Text('+ Cat', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 12),
 
@@ -601,7 +626,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
   }
 
   // Add Category Dialog
-  void _openAddCategoryDialog() {
+  void _openAddCategoryDialog([Function(String)? onCategoryAdded]) {
     final catController = TextEditingController();
     showDialog(
       context: context,
@@ -641,13 +666,26 @@ class _InventoryScreenState extends State<InventoryScreen> {
               ),
               onPressed: () {
                 final cat = catController.text.trim();
-                if (cat.isNotEmpty && !_categories.contains(cat)) {
-                  setState(() {
-                    _categories.add(cat);
-                  });
+                if (cat.isNotEmpty) {
+                  if (!_categories.contains(cat)) {
+                    setState(() {
+                      _categories.add(cat);
+                    });
+                  }
+                  if (onCategoryAdded != null) {
+                    onCategoryAdded(cat);
+                  }
                   Navigator.pop(context);
                   ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text('Category "$cat" added!')),
+                    SnackBar(
+                      backgroundColor: const Color(0xFF0F172A),
+                      behavior: SnackBarBehavior.floating,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                        side: const BorderSide(color: Color(0xFF2563EB)),
+                      ),
+                      content: Text('Category "$cat" added successfully! ðŸ“'),
+                    ),
                   );
                 } else {
                   Navigator.pop(context);
@@ -988,17 +1026,46 @@ class _InventoryScreenState extends State<InventoryScreen> {
         ],
       ),
 
-      // Prominent Floating Action Button for Add Product
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _openAddProductDialog,
-        backgroundColor: const Color(0xFF2563EB),
-        foregroundColor: Colors.white,
-        elevation: 8,
-        icon: const Icon(Icons.add_shopping_cart_rounded, size: 20),
-        label: const Text(
-          'Add Product',
-          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-        ),
+      // Dual Action Floating Buttons: Add Category & Add Product
+      floatingActionButton: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          // 1. Add Category Button
+          FloatingActionButton.extended(
+            heroTag: 'add_category_fab',
+            onPressed: () => _openAddCategoryDialog(),
+            backgroundColor: const Color(0xFF0F172A),
+            foregroundColor: const Color(0xFF38BDF8),
+            elevation: 6,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: Color(0xFF2563EB), width: 1.2),
+            ),
+            icon: const Icon(Icons.create_new_folder_rounded, size: 18),
+            label: const Text(
+              'Add Category',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+          ),
+          const SizedBox(width: 10),
+          // 2. Add Product Button
+          FloatingActionButton.extended(
+            heroTag: 'add_product_fab',
+            onPressed: _openAddProductDialog,
+            backgroundColor: const Color(0xFF2563EB),
+            foregroundColor: Colors.white,
+            elevation: 8,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: Color(0xFF38BDF8), width: 1),
+            ),
+            icon: const Icon(Icons.add_shopping_cart_rounded, size: 18),
+            label: const Text(
+              'Add Product',
+              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+            ),
+          ),
+        ],
       ),
 
       body: Column(
@@ -1216,42 +1283,84 @@ class _InventoryScreenState extends State<InventoryScreen> {
             ),
           ),
 
-          // Feature: Category Quick Filter Badges
+          // Feature: Category Quick Filter Badges with prominent "+ Category" button
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
             child: Row(
-              children: _categories.map((cat) {
-                final isCatSelected = _selectedCategory == cat;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 6),
-                  child: ChoiceChip(
-                    selected: isCatSelected,
-                    label: Text(
-                      cat,
-                      style: TextStyle(
-                        fontSize: 10.5,
-                        fontWeight: isCatSelected ? FontWeight.bold : FontWeight.normal,
-                        color: isCatSelected ? Colors.white : Colors.white60,
+              children: [
+                // Prominent Add Category Button right at the start of the category row!
+                Padding(
+                  padding: const EdgeInsets.only(right: 8),
+                  child: InkWell(
+                    onTap: () => _openAddCategoryDialog(),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFF38BDF8), width: 1),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFF2563EB).withOpacity(0.35),
+                            blurRadius: 6,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.create_new_folder_rounded, size: 14, color: Color(0xFF38BDF8)),
+                          SizedBox(width: 4),
+                          Text(
+                            '+ Category',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    backgroundColor: Colors.transparent,
-                    selectedColor: const Color(0xFF1E3A8A),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                      side: BorderSide(
-                        color: isCatSelected ? const Color(0xFF38BDF8) : Colors.white12,
-                        width: 0.8,
-                      ),
-                    ),
-                    onSelected: (val) {
-                      setState(() {
-                        _selectedCategory = cat;
-                      });
-                    },
                   ),
-                );
-              }).toList(),
+                ),
+                ..._categories.map((cat) {
+                  final isCatSelected = _selectedCategory == cat;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 6),
+                    child: ChoiceChip(
+                      selected: isCatSelected,
+                      label: Text(
+                        cat,
+                        style: TextStyle(
+                          fontSize: 10.5,
+                          fontWeight: isCatSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isCatSelected ? Colors.white : Colors.white60,
+                        ),
+                      ),
+                      backgroundColor: Colors.transparent,
+                      selectedColor: const Color(0xFF1E3A8A),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        side: BorderSide(
+                          color: isCatSelected ? const Color(0xFF38BDF8) : Colors.white12,
+                          width: 0.8,
+                        ),
+                      ),
+                      onSelected: (val) {
+                        setState(() {
+                          _selectedCategory = cat;
+                        });
+                      },
+                    ),
+                  );
+                }),
+              ],
             ),
           ),
 
