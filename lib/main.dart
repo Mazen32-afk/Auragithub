@@ -625,75 +625,282 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
-  // Add Category Dialog
+  // Category Manager Dialog (Add & Delete Categories)
   void _openAddCategoryDialog([Function(String)? onCategoryAdded]) {
     final catController = TextEditingController();
     showDialog(
       context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF0F172A),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(20),
-            side: const BorderSide(color: Color(0xFF2563EB), width: 1),
-          ),
-          title: const Row(
-            children: [
-              Icon(Icons.create_new_folder_rounded, color: Color(0xFF38BDF8), size: 24),
-              SizedBox(width: 8),
-              Text('Add New Category', style: TextStyle(color: Colors.white, fontSize: 17)),
-            ],
-          ),
-          content: TextField(
-            controller: catController,
-            style: const TextStyle(color: Colors.white),
-            decoration: const InputDecoration(
-              labelText: 'Category Title',
-              labelStyle: TextStyle(color: Color(0xFF94A3B8)),
-              enabledBorder: UnderlineInputBorder(borderSide: BorderSide(color: Color(0xFF38BDF8))),
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
-            ),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2563EB),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (context, setDialogState) {
+            final customCategories = _categories.where((c) => c != 'All').toList();
+
+            return AlertDialog(
+              backgroundColor: const Color(0xFF0F172A),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(24),
+                side: const BorderSide(color: Color(0xFF2563EB), width: 1.2),
               ),
-              onPressed: () {
-                final cat = catController.text.trim();
-                if (cat.isNotEmpty) {
-                  if (!_categories.contains(cat)) {
-                    setState(() {
-                      _categories.add(cat);
-                    });
-                  }
-                  if (onCategoryAdded != null) {
-                    onCategoryAdded(cat);
-                  }
-                  Navigator.pop(context);
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(
-                      backgroundColor: const Color(0xFF0F172A),
-                      behavior: SnackBarBehavior.floating,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: const BorderSide(color: Color(0xFF2563EB)),
-                      ),
-                      content: Text('Category "$cat" added successfully! ðŸ“'),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2563EB).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFF38BDF8).withOpacity(0.4)),
                     ),
-                  );
-                } else {
-                  Navigator.pop(context);
-                }
-              },
-              child: const Text('Add'),
-            ),
-          ],
+                    child: const Icon(Icons.folder_copy_rounded, color: Color(0xFF38BDF8), size: 20),
+                  ),
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Category Manager',
+                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                        ),
+                        Text(
+                          'Add new or delete existing categories',
+                          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              content: SizedBox(
+                width: double.maxFinite,
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Input to add category
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextField(
+                              controller: catController,
+                              style: const TextStyle(color: Colors.white, fontSize: 13),
+                              decoration: InputDecoration(
+                                hintText: 'New Category Name...',
+                                hintStyle: const TextStyle(color: Colors.white38, fontSize: 12),
+                                isDense: true,
+                                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                                filled: true,
+                                fillColor: const Color(0xFF1E293B),
+                                border: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: Color(0xFF38BDF8), width: 0.8),
+                                ),
+                                enabledBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: BorderSide(color: Colors.white.withOpacity(0.1)),
+                                ),
+                                focusedBorder: OutlineInputBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  borderSide: const BorderSide(color: Color(0xFF38BDF8), width: 1.5),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF2563EB),
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                            ),
+                            onPressed: () {
+                              final cat = catController.text.trim();
+                              if (cat.isNotEmpty) {
+                                if (!_categories.contains(cat)) {
+                                  setState(() {
+                                    _categories.add(cat);
+                                  });
+                                  setDialogState(() {});
+                                }
+                                if (onCategoryAdded != null) {
+                                  onCategoryAdded(cat);
+                                }
+                                catController.clear();
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    backgroundColor: const Color(0xFF0F172A),
+                                    behavior: SnackBarBehavior.floating,
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      side: const BorderSide(color: Color(0xFF2563EB)),
+                                    ),
+                                    content: Text('Category "$cat" added! ðŸ“'),
+                                  ),
+                                );
+                              }
+                            },
+                            child: const Text('+ Add', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 18),
+                      const Divider(color: Colors.white12, height: 1),
+                      const SizedBox(height: 12),
+
+                      // Existing Categories List with Delete Icon
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Categories (${customCategories.length})',
+                            style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w600),
+                          ),
+                          const Text(
+                            'Tap ðŸ—‘ï¸ to delete',
+                            style: TextStyle(color: Colors.white38, fontSize: 10),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      ConstrainedBox(
+                        constraints: const BoxConstraints(maxHeight: 220),
+                        child: ListView.separated(
+                          shrinkWrap: true,
+                          itemCount: customCategories.length,
+                          separatorBuilder: (_, __) => const SizedBox(height: 6),
+                          itemBuilder: (context, index) {
+                            final cat = customCategories[index];
+                            final count = _products.where((p) => p.category == cat).length;
+                            final isGeneral = cat.toLowerCase() == 'general';
+
+                            return Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF1E293B).withOpacity(0.5),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.white.withOpacity(0.06)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.folder_outlined, size: 16, color: Color(0xFF38BDF8)),
+                                  const SizedBox(width: 8),
+                                  Expanded(
+                                    child: Text(
+                                      cat,
+                                      style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.w600),
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                  ),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: Colors.white.withOpacity(0.08),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: Text(
+                                      '$count item${count == 1 ? '' : 's'}',
+                                      style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10),
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  if (isGeneral)
+                                    const Padding(
+                                      padding: EdgeInsets.symmetric(horizontal: 4),
+                                      child: Text(
+                                        'Default',
+                                        style: TextStyle(color: Colors.white38, fontSize: 10, fontStyle: FontStyle.italic),
+                                      ),
+                                    )
+                                  else
+                                    IconButton(
+                                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.redAccent, size: 18),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                                      tooltip: 'Delete category "$cat"',
+                                      onPressed: () {
+                                        // Show confirm dialog
+                                        showDialog(
+                                          context: context,
+                                          builder: (confirmCtx) {
+                                            return AlertDialog(
+                                              backgroundColor: const Color(0xFF0F172A),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius: BorderRadius.circular(18),
+                                                side: const BorderSide(color: Colors.redAccent, width: 1),
+                                              ),
+                                              title: Text(
+                                                'Delete "$cat"?',
+                                                style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                                              ),
+                                              content: Text(
+                                                'All $count product(s) in this category will be safely moved to "General" so no inventory is lost.',
+                                                style: const TextStyle(color: Color(0xFFCBD5E1), fontSize: 12),
+                                              ),
+                                              actions: [
+                                                TextButton(
+                                                  onPressed: () => Navigator.pop(confirmCtx),
+                                                  child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+                                                ),
+                                                ElevatedButton(
+                                                  style: ElevatedButton.styleFrom(
+                                                    backgroundColor: Colors.redAccent,
+                                                    foregroundColor: Colors.white,
+                                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                  ),
+                                                  onPressed: () {
+                                                    setState(() {
+                                                      _categories.remove(cat);
+                                                      for (var p in _products) {
+                                                        if (p.category == cat) {
+                                                          p.category = 'General';
+                                                        }
+                                                      }
+                                                      if (_selectedCategory == cat) {
+                                                        _selectedCategory = 'All';
+                                                      }
+                                                    });
+                                                    setDialogState(() {});
+                                                    Navigator.pop(confirmCtx);
+                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                      SnackBar(
+                                                        backgroundColor: const Color(0xFF0F172A),
+                                                        behavior: SnackBarBehavior.floating,
+                                                        shape: RoundedRectangleBorder(
+                                                          borderRadius: BorderRadius.circular(12),
+                                                          side: const BorderSide(color: Colors.redAccent),
+                                                        ),
+                                                        content: Text('Category "$cat" deleted. Products moved to General.'),
+                                                      ),
+                                                    );
+                                                  },
+                                                  child: const Text('Delete'),
+                                                ),
+                                              ],
+                                            );
+                                          },
+                                        );
+                                      },
+                                    ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(dialogCtx),
+                  child: const Text('Close', style: TextStyle(color: Color(0xFF38BDF8), fontWeight: FontWeight.bold)),
+                ),
+              ],
+            );
+          },
         );
       },
     );
@@ -1317,7 +1524,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                           Icon(Icons.create_new_folder_rounded, size: 14, color: Color(0xFF38BDF8)),
                           SizedBox(width: 4),
                           Text(
-                            '+ Category',
+                            '+ / Manage',
                             style: TextStyle(
                               fontSize: 11,
                               fontWeight: FontWeight.bold,
@@ -1333,30 +1540,37 @@ class _InventoryScreenState extends State<InventoryScreen> {
                   final isCatSelected = _selectedCategory == cat;
                   return Padding(
                     padding: const EdgeInsets.only(right: 6),
-                    child: ChoiceChip(
-                      selected: isCatSelected,
-                      label: Text(
-                        cat,
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: isCatSelected ? FontWeight.bold : FontWeight.normal,
-                          color: isCatSelected ? Colors.white : Colors.white60,
-                        ),
-                      ),
-                      backgroundColor: Colors.transparent,
-                      selectedColor: const Color(0xFF1E3A8A),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        side: BorderSide(
-                          color: isCatSelected ? const Color(0xFF38BDF8) : Colors.white12,
-                          width: 0.8,
-                        ),
-                      ),
-                      onSelected: (val) {
-                        setState(() {
-                          _selectedCategory = cat;
-                        });
+                    child: GestureDetector(
+                      onLongPress: () {
+                        if (cat != 'All') {
+                          _openAddCategoryDialog();
+                        }
                       },
+                      child: ChoiceChip(
+                        selected: isCatSelected,
+                        label: Text(
+                          cat,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: isCatSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isCatSelected ? Colors.white : Colors.white60,
+                          ),
+                        ),
+                        backgroundColor: Colors.transparent,
+                        selectedColor: const Color(0xFF1E3A8A),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          side: BorderSide(
+                            color: isCatSelected ? const Color(0xFF38BDF8) : Colors.white12,
+                            width: 0.8,
+                          ),
+                        ),
+                        onSelected: (val) {
+                          setState(() {
+                            _selectedCategory = cat;
+                          });
+                        },
+                      ),
                     ),
                   );
                 }),
