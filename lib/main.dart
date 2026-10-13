@@ -788,7 +788,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
         pageFormat: PdfPageFormat.a4,
         build: (pw.Context context) {
           return pw.Column(
-            crossAxisAlignment: pw.Context context != null ? pw.CrossAxisAlignment.start : pw.CrossAxisAlignment.start,
+            crossAxisAlignment: pw.CrossAxisAlignment.start,
             children: [
               pw.Header(
                 level: 0,
