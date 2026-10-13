@@ -906,108 +906,605 @@ class _InventoryScreenState extends State<InventoryScreen> {
     );
   }
 
-  // 3. Bulk Adjustment Bottom Sheet
+  // 3. Full Bulk Adjustment Bottom Sheet (+ and - controls, presets, audit reason, calculation preview)
   void _openBulkAdjustSheet(Product product) {
-    final qtyController = TextEditingController(text: product.quantity.toString());
+    String adjustmentMode = 'delta'; // 'delta' or 'set'
+    String deltaSign = '+'; // '+' or '-'
+    final deltaController = TextEditingController(text: '10');
+    final exactController = TextEditingController(text: product.quantity.toString());
+    String selectedReason = 'Delivery Shipment / Restock';
+
+    final List<String> reasonOptions = [
+      'Delivery Shipment / Restock',
+      'Physical Count / Periodic Audit',
+      'Damaged / Scrap / Expired',
+      'Customer Return',
+      'Inventory Rebalancing',
+      'Point of Sale Direct Deduction',
+    ];
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF0F172A),
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF0A101F),
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
       builder: (context) {
-        return Padding(
-          padding: EdgeInsets.only(
-            left: 20,
-            right: 20,
-            top: 20,
-            bottom: MediaQuery.of(context).viewInsets.bottom + 24,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
+        return StatefulBuilder(
+          builder: (context, setSheetState) {
+            // Calculate projected quantity
+            int projectedQty = product.quantity;
+            if (adjustmentMode == 'set') {
+              final parsed = int.tryParse(exactController.text);
+              projectedQty = parsed != null ? parsed.clamp(0, 999999) : product.quantity;
+            } else {
+              final parsedDelta = int.tryParse(deltaController.text) ?? 0;
+              if (deltaSign == '+') {
+                projectedQty = product.quantity + parsedDelta;
+              } else {
+                projectedQty = (product.quantity - parsedDelta).clamp(0, 999999);
+              }
+            }
+
+            final int deltaAmount = projectedQty - product.quantity;
+            final double valuationDelta = deltaAmount * product.price;
+            final bool isProjectedLowStock = projectedQty < 5;
+
+            void applyPreset(int val) {
+              setSheetState(() {
+                adjustmentMode = 'delta';
+                if (val > 0) {
+                  deltaSign = '+';
+                  deltaController.text = val.toString();
+                } else {
+                  deltaSign = '-';
+                  deltaController.text = val.abs().toString();
+                }
+              });
+            }
+
+            return SingleChildScrollView(
+              padding: EdgeInsets.only(
+                left: 20,
+                right: 20,
+                top: 16,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24,
               ),
-              const SizedBox(height: 16),
-              const Text(
-                'Bulk Stock Adjustment',
-                style: TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFF38BDF8),
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                product.name,
-                style: const TextStyle(color: Colors.white70, fontSize: 13),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: qtyController,
-                keyboardType: TextInputType.number,
-                autofocus: true,
-                style: const TextStyle(color: Colors.white, fontSize: 18),
-                decoration: InputDecoration(
-                  labelText: 'Set Exact Quantity',
-                  labelStyle: const TextStyle(color: Color(0xFF94A3B8)),
-                  prefixIcon: const Icon(Icons.inventory_2, color: Color(0xFF38BDF8)),
-                  filled: true,
-                  fillColor: const Color(0xFF1E293B),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: Color(0xFF2563EB)),
-                  ),
-                ),
-              ),
-              const SizedBox(height: 16),
-              Row(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: OutlinedButton(
-                      style: OutlinedButton.styleFrom(
-                        foregroundColor: Colors.white70,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  // Handle bar
+                  Center(
+                    child: Container(
+                      width: 44,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2),
                       ),
-                      onPressed: () => Navigator.pop(context),
-                      child: const Text('Cancel'),
                     ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF2563EB),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  const SizedBox(height: 14),
+
+                  // Header with icon and SKU
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2563EB).withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: const Color(0xFF2563EB).withOpacity(0.35)),
+                            ),
+                            child: const Icon(Icons.tune_rounded, color: Color(0xFF38BDF8), size: 20),
+                          ),
+                          const SizedBox(width: 10),
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Bulk Stock Adjustment',
+                                style: TextStyle(
+                                  fontSize: 17,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                  letterSpacing: -0.3,
+                                ),
+                              ),
+                              Text(
+                                'SKU: ${product.barcode}',
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Color(0xFF94A3B8),
+                                  fontFamily: 'monospace',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
                       ),
-                      onPressed: () {
-                        final val = int.tryParse(qtyController.text);
-                        if (val != null && val >= 0) {
-                          setState(() {
-                            product.quantity = val;
-                          });
-                          Navigator.pop(context);
-                        }
-                      },
-                      child: const Text('Save Quantity'),
+                      IconButton(
+                        icon: const Icon(Icons.close, color: Colors.white60, size: 20),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Product Summary Card
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.04),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withOpacity(0.08)),
                     ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              product.category.toUpperCase(),
+                              style: const TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF38BDF8),
+                                letterSpacing: 0.8,
+                              ),
+                            ),
+                            Text(
+                              'Unit: ${_selectedCurrency.symbol}${product.price.toStringAsFixed(2)}',
+                              style: const TextStyle(fontSize: 12, color: Color(0xFFCBD5E1), fontWeight: FontWeight.w600),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          product.name,
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Current Stock Count:',
+                              style: TextStyle(fontSize: 12, color: Color(0xFF94A3B8)),
+                            ),
+                            Text(
+                              '${product.quantity} units',
+                              style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF38BDF8),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Mode Switcher (Delta Â± vs Set Exact)
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: Colors.black38,
+                      borderRadius: BorderRadius.circular(14),
+                      border: Border.all(color: Colors.white.withOpacity(0.08)),
+                    ),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () {
+                              setSheetState(() => adjustmentMode = 'delta');
+                            },
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              decoration: BoxDecoration(
+                                color: adjustmentMode == 'delta' ? const Color(0xFF2563EB) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'Add / Remove Delta (Â±)',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: adjustmentMode == 'delta' ? Colors.white : Colors.white60,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () {
+                              setSheetState(() => adjustmentMode = 'set');
+                            },
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              decoration: BoxDecoration(
+                                color: adjustmentMode == 'set' ? const Color(0xFF2563EB) : Colors.transparent,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              alignment: Alignment.center,
+                              child: Text(
+                                'Set Exact Target',
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: adjustmentMode == 'set' ? Colors.white : Colors.white60,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Input controls according to mode
+                  if (adjustmentMode == 'delta') ...[
+                    const Text(
+                      'Bulk Adjustment Delta',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFCBD5E1)),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        // +/- toggle buttons
+                        Container(
+                          decoration: BoxDecoration(
+                            color: Colors.black38,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.white.withOpacity(0.1)),
+                          ),
+                          child: Row(
+                            children: [
+                              InkWell(
+                                onTap: () => setSheetState(() => deltaSign = '+'),
+                                borderRadius: const BorderRadius.horizontal(left: Radius.circular(11)),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: deltaSign == '+' ? const Color(0xFF2563EB) : Colors.transparent,
+                                    borderRadius: const BorderRadius.horizontal(left: Radius.circular(11)),
+                                  ),
+                                  child: const Text(
+                                    '+ Add',
+                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                              InkWell(
+                                onTap: () => setSheetState(() => deltaSign = '-'),
+                                borderRadius: const BorderRadius.horizontal(right: Radius.circular(11)),
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                                  decoration: BoxDecoration(
+                                    color: deltaSign == '-' ? const Color(0xFFDC2626) : Colors.transparent,
+                                    borderRadius: const BorderRadius.horizontal(right: Radius.circular(11)),
+                                  ),
+                                  child: const Text(
+                                    '- Deduct',
+                                    style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: Colors.white),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        // Delta input
+                        Expanded(
+                          child: TextField(
+                            controller: deltaController,
+                            keyboardType: TextInputType.number,
+                            style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                            onChanged: (_) => setSheetState(() {}),
+                            decoration: InputDecoration(
+                              hintText: 'e.g. 50',
+                              hintStyle: const TextStyle(color: Colors.white30),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                              filled: true,
+                              fillColor: const Color(0xFF1E293B),
+                              border: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
+                              ),
+                              enabledBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
+                              ),
+                              focusedBorder: OutlineInputBorder(
+                                borderRadius: BorderRadius.circular(12),
+                                borderSide: const BorderSide(color: Color(0xFF38BDF8)),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Quick presets chips
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: Row(
+                        children: [
+                          const Text('Presets: ', style: TextStyle(fontSize: 11, color: Color(0xFF64748B))),
+                          ...[5, 10, 25, 50, 100].map((preset) => Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: InkWell(
+                              onTap: () => applyPreset(preset),
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.06),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.white.withOpacity(0.08)),
+                                ),
+                                child: Text(
+                                  '+$preset',
+                                  style: const TextStyle(fontSize: 11, color: Color(0xFF38BDF8), fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                          )),
+                          ...[-5, -10].map((preset) => Padding(
+                            padding: const EdgeInsets.only(right: 6),
+                            child: InkWell(
+                              onTap: () => applyPreset(preset),
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.06),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(color: Colors.white.withOpacity(0.08)),
+                                ),
+                                child: Text(
+                                  '$preset',
+                                  style: const TextStyle(fontSize: 11, color: Color(0xFFF87171), fontWeight: FontWeight.bold),
+                                ),
+                              ),
+                            ),
+                          )),
+                        ],
+                      ),
+                    ),
+                  ] else ...[
+                    const Text(
+                      'New Exact Inventory Quantity',
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFCBD5E1)),
+                    ),
+                    const SizedBox(height: 8),
+                    TextField(
+                      controller: exactController,
+                      keyboardType: TextInputType.number,
+                      style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold),
+                      onChanged: (_) => setSheetState(() {}),
+                      decoration: InputDecoration(
+                        labelText: 'Enter exact count',
+                        labelStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                        filled: true,
+                        fillColor: const Color(0xFF1E293B),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide(color: Colors.white.withOpacity(0.12)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: const BorderSide(color: Color(0xFF38BDF8)),
+                        ),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 14),
+
+                  // Reason Dropdown
+                  const Text(
+                    'Audit / Adjustment Reason',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFFCBD5E1)),
+                  ),
+                  const SizedBox(height: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E293B),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withOpacity(0.1)),
+                    ),
+                    child: DropdownButtonHideUnderline(
+                      child: DropdownButton<String>(
+                        value: selectedReason,
+                        isExpanded: true,
+                        dropdownColor: const Color(0xFF0F172A),
+                        icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF38BDF8)),
+                        style: const TextStyle(color: Colors.white, fontSize: 13),
+                        onChanged: (val) {
+                          if (val != null) {
+                            setSheetState(() => selectedReason = val);
+                          }
+                        },
+                        items: reasonOptions.map((r) => DropdownMenuItem(
+                          value: r,
+                          child: Text(r),
+                        )).toList(),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+
+                  // Calculation Outcome Preview Box
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: isProjectedLowStock
+                          ? const Color(0xFF7F1D1D).withOpacity(0.3)
+                          : const Color(0xFF1E293B).withOpacity(0.6),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isProjectedLowStock
+                            ? const Color(0xFFEF4444).withOpacity(0.5)
+                            : const Color(0xFF2563EB).withOpacity(0.3),
+                      ),
+                    ),
+                    child: Column(
+                      children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                const Text(
+                                  'Calculated Outcome:',
+                                  style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white70),
+                                ),
+                                if (isProjectedLowStock) ...[
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFFDC2626),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text(
+                                      'LOW STOCK (< 5)',
+                                      style: TextStyle(fontSize: 9, fontWeight: FontWeight.w900, color: Colors.white),
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                            Text(
+                              deltaAmount >= 0 ? '+$deltaAmount units' : '$deltaAmount units',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.bold,
+                                color: deltaAmount >= 0 ? const Color(0xFF38BDF8) : const Color(0xFFF87171),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Row(
+                              children: [
+                                Text('${product.quantity}', style: const TextStyle(fontSize: 14, color: Colors.white60)),
+                                const SizedBox(width: 6),
+                                const Icon(Icons.arrow_forward_rounded, size: 14, color: Color(0xFF38BDF8)),
+                                const SizedBox(width: 6),
+                                Text(
+                                  '$projectedQty units',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w900,
+                                    color: isProjectedLowStock ? const Color(0xFFF87171) : Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Text(
+                              'Valuation: ${valuationDelta >= 0 ? '+' : ''}${_selectedCurrency.symbol}${valuationDelta.toStringAsFixed(2)}',
+                              style: TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                color: valuationDelta >= 0 ? const Color(0xFF34D399) : const Color(0xFFF87171),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 18),
+
+                  // Actions: Cancel & Confirm
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          style: OutlinedButton.styleFrom(
+                            foregroundColor: Colors.white70,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              side: BorderSide(color: Colors.white.withOpacity(0.15)),
+                            ),
+                          ),
+                          onPressed: () => Navigator.pop(context),
+                          child: const Text('Cancel'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        flex: 2,
+                        child: ElevatedButton.icon(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF2563EB),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            elevation: 4,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: const Icon(Icons.check_circle_outline, size: 18),
+                          label: const Text(
+                            'Confirm & Log Adjustment',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold),
+                          ),
+                          onPressed: () {
+                            HapticFeedback.heavyImpact();
+                            setState(() {
+                              product.quantity = projectedQty;
+                            });
+                            if (projectedQty < 5) {
+                              _triggerAndroidLowStockNotification(product);
+                            }
+                            Navigator.pop(context);
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(
+                                content: Text('Stock updated to $projectedQty units ($selectedReason)'),
+                                backgroundColor: const Color(0xFF1E293B),
+                                behavior: SnackBarBehavior.floating,
+                                duration: const Duration(seconds: 2),
+                              ),
+                            );
+                          },
+                        ),
+                      ),
+                    ],
                   ),
                 ],
-              )
-            ],
-          ),
+              ),
+            );
+          },
         );
       },
     );
