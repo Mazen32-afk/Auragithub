@@ -1784,125 +1784,137 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
       body: Column(
         children: [
-          // 1. Dashboard: Total Financial Valuation (Royal Blue Executive Glass)
+          // 1. Compact Executive Financial Valuation Bar (Ultra-sleek to maximize product list height)
           Container(
-            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            padding: const EdgeInsets.all(18),
+            margin: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
             decoration: BoxDecoration(
               gradient: const LinearGradient(
                 colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
               ),
-              borderRadius: BorderRadius.circular(20),
+              borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: const Color(0xFF2563EB).withOpacity(0.4),
-                width: 1.2,
+                color: const Color(0xFF2563EB).withOpacity(0.35),
+                width: 1,
               ),
               boxShadow: [
                 BoxShadow(
-                  color: const Color(0xFF2563EB).withOpacity(0.12),
-                  blurRadius: 20,
-                  offset: const Offset(0, 8),
+                  color: const Color(0xFF2563EB).withOpacity(0.08),
+                  blurRadius: 10,
+                  offset: const Offset(0, 2),
                 )
               ],
             ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  mainAxisSize: MainAxisSize.min,
                   children: [
-                    Row(
-                      children: [
-                        const Text(
-                          'TOTAL INVENTORY VALUATION',
-                          style: TextStyle(
-                            fontSize: 11,
-                            letterSpacing: 1.2,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF38BDF8),
-                          ),
-                        ),
-                        const SizedBox(width: 6),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF2563EB).withOpacity(0.25),
-                            borderRadius: BorderRadius.circular(6),
-                            border: Border.all(color: const Color(0xFF38BDF8).withOpacity(0.4)),
-                          ),
-                          child: Text(
-                            _selectedCurrency.code,
-                            style: const TextStyle(
-                              fontSize: 10,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF38BDF8),
-                            ),
-                          ),
-                        ),
-                      ],
+                    Container(
+                      padding: const EdgeInsets.all(5),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2563EB).withOpacity(0.2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.account_balance_wallet_rounded, color: Color(0xFF38BDF8), size: 15),
                     ),
-                    if (lowStockCount > 0)
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFEF4444).withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: const Color(0xFFEF4444), width: 1),
-                        ),
-                        child: Row(
+                    const SizedBox(width: 8),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            const Icon(Icons.warning_amber_rounded, color: Color(0xFFEF4444), size: 14),
+                            const Text(
+                              'TOTAL VALUATION',
+                              style: TextStyle(
+                                fontSize: 9.0,
+                                letterSpacing: 0.8,
+                                fontWeight: FontWeight.w700,
+                                color: Color(0xFF38BDF8),
+                              ),
+                            ),
                             const SizedBox(width: 4),
-                            Text(
-                              '$lowStockCount Low Stock',
-                              style: const TextStyle(
-                                color: Color(0xFFEF4444),
-                                fontSize: 11,
-                                fontWeight: FontWeight.bold,
+                            Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2563EB).withOpacity(0.25),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: Text(
+                                _selectedCurrency.code,
+                                style: const TextStyle(
+                                  fontSize: 8.5,
+                                  fontWeight: FontWeight.bold,
+                                  color: Color(0xFF38BDF8),
+                                ),
                               ),
                             ),
                           ],
                         ),
-                      )
+                        Text(
+                          _formatPrice(totalFinancialValue),
+                          style: const TextStyle(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: Colors.white,
+                            fontFeatures: [FontFeature.tabularFigures()],
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  _formatPrice(totalFinancialValue),
-                  style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    fontFeatures: [FontFeature.tabularFigures()],
-                  ),
-                ),
-                const SizedBox(height: 12),
                 Row(
+                  mainAxisSize: MainAxisSize.min,
                   children: [
+                    if (lowStockCount > 0) ...[
+                      InkWell(
+                        onTap: () {
+                          setState(() {
+                            _activeSort = _activeSort == QuickSortOption.lowStock ? QuickSortOption.all : QuickSortOption.lowStock;
+                          });
+                        },
+                        borderRadius: BorderRadius.circular(8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFFEF4444).withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(color: const Color(0xFFEF4444), width: 0.8),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.warning_amber_rounded, color: Color(0xFFEF4444), size: 12),
+                              const SizedBox(width: 3),
+                              Text(
+                                '$lowStockCount Low',
+                                style: const TextStyle(
+                                  color: Color(0xFFEF4444),
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                    ],
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
                       decoration: BoxDecoration(
                         color: const Color(0xFF1E293B),
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Text(
-                        '${_products.length} Products registered',
-                        style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w500),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF1E293B),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '$totalUnitsCount Total Units in stock',
-                        style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12, fontWeight: FontWeight.w500),
+                        '${_products.length} Items â€¢ $totalUnitsCount Units',
+                        style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 10.5, fontWeight: FontWeight.w500),
                       ),
                     ),
                   ],
@@ -1911,172 +1923,191 @@ class _InventoryScreenState extends State<InventoryScreen> {
             ),
           ),
 
-          // 5. Search Bar (Name or Barcode)
+          // 2. Space-Efficient Search & Sort Toolbar
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-            child: TextField(
-              controller: _searchController,
-              onChanged: (val) => setState(() => _searchQuery = val),
-              style: const TextStyle(color: Colors.white),
-              decoration: InputDecoration(
-                hintText: 'Search by product name or barcode...',
-                hintStyle: const TextStyle(color: Colors.white38),
-                prefixIcon: const Icon(Icons.search, color: Color(0xFF38BDF8)),
-                suffixIcon: _searchQuery.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear, color: Colors.white54),
-                        onPressed: () {
-                          _searchController.clear();
-                          setState(() => _searchQuery = '');
-                        },
-                      )
-                    : null,
-                filled: true,
-                fillColor: const Color(0xFF0F172A),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16),
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Color(0xFF1E293B)),
-                ),
-                enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Color(0xFF1E293B)),
-                ),
-                focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Color(0xFF2563EB)),
-                ),
-              ),
-            ),
-          ),
-
-          // Feature: Horizontal Quick Sort & Filter Chips
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-            child: Row(
-              children: QuickSortOption.values.map((sort) {
-                final isSelected = _activeSort == sort;
-                return Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: FilterChip(
-                    selected: isSelected,
-                    showCheckmark: false,
-                    avatar: Icon(
-                      sort.icon,
-                      size: 14,
-                      color: isSelected ? Colors.white : (sort == QuickSortOption.lowStock ? const Color(0xFFEF4444) : const Color(0xFF94A3B8)),
-                    ),
-                    label: Text(
-                      sort.label,
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
-                        color: isSelected ? Colors.white : (sort == QuickSortOption.lowStock ? const Color(0xFFEF4444) : const Color(0xFF94A3B8)),
-                      ),
-                    ),
-                    backgroundColor: const Color(0xFF0F172A),
-                    selectedColor: const Color(0xFF2563EB),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                      side: BorderSide(
-                        color: isSelected
-                            ? const Color(0xFF38BDF8)
-                            : (sort == QuickSortOption.lowStock ? const Color(0xFFEF4444).withOpacity(0.5) : const Color(0xFF1E293B)),
-                        width: 1,
-                      ),
-                    ),
-                    onSelected: (val) {
-                      setState(() {
-                        _activeSort = sort;
-                      });
-                    },
-                  ),
-                );
-              }).toList(),
-            ),
-          ),
-
-          // Feature: Category Quick Filter Badges with prominent "+ Category" button
-          SingleChildScrollView(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
             child: Row(
               children: [
-                // Prominent Add Category Button right at the start of the category row!
-                Padding(
-                  padding: const EdgeInsets.only(right: 8),
-                  child: InkWell(
-                    onTap: () => _openAddCategoryDialog(),
-                    borderRadius: BorderRadius.circular(10),
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
+                Expanded(
+                  child: SizedBox(
+                    height: 38,
+                    child: TextField(
+                      controller: _searchController,
+                      onChanged: (val) => setState(() => _searchQuery = val),
+                      style: const TextStyle(color: Colors.white, fontSize: 12.5),
+                      decoration: InputDecoration(
+                        isDense: true,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+                        hintText: 'Search product or barcode...',
+                        hintStyle: const TextStyle(color: Colors.white38, fontSize: 11.5),
+                        prefixIcon: const Icon(Icons.search, color: Color(0xFF38BDF8), size: 16),
+                        prefixIconConstraints: const BoxConstraints(minWidth: 30, minHeight: 30),
+                        suffixIcon: _searchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.clear, color: Colors.white54, size: 15),
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                                onPressed: () {
+                                  _searchController.clear();
+                                  setState(() => _searchQuery = '');
+                                },
+                              )
+                            : null,
+                        filled: true,
+                        fillColor: const Color(0xFF0F172A),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: Color(0xFF1E293B)),
                         ),
-                        borderRadius: BorderRadius.circular(10),
-                        border: Border.all(color: const Color(0xFF38BDF8), width: 1),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF2563EB).withOpacity(0.35),
-                            blurRadius: 6,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: Color(0xFF1E293B)),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(color: Color(0xFF2563EB)),
+                        ),
                       ),
-                      child: const Row(
-                        mainAxisSize: MainAxisSize.min,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 6),
+                // Compact Sort Menu Button right beside search input
+                PopupMenuButton<QuickSortOption>(
+                  tooltip: 'Sort Options',
+                  initialValue: _activeSort,
+                  onSelected: (QuickSortOption sort) {
+                    setState(() => _activeSort = sort);
+                  },
+                  color: const Color(0xFF0F172A),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    side: const BorderSide(color: Color(0xFF2563EB), width: 1),
+                  ),
+                  child: Container(
+                    height: 38,
+                    padding: const EdgeInsets.symmetric(horizontal: 9),
+                    decoration: BoxDecoration(
+                      color: _activeSort == QuickSortOption.all ? const Color(0xFF0F172A) : const Color(0xFF1E3A8A),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: _activeSort == QuickSortOption.all ? const Color(0xFF1E293B) : const Color(0xFF38BDF8),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          _activeSort.icon,
+                          size: 14,
+                          color: _activeSort == QuickSortOption.lowStock ? const Color(0xFFEF4444) : const Color(0xFF38BDF8),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          _activeSort == QuickSortOption.all ? 'Sort' : _activeSort.label,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: _activeSort == QuickSortOption.lowStock ? const Color(0xFFEF4444) : Colors.white,
+                          ),
+                        ),
+                        const Icon(Icons.arrow_drop_down, size: 14, color: Colors.white54),
+                      ],
+                    ),
+                  ),
+                  itemBuilder: (context) => QuickSortOption.values.map((sort) {
+                    final isSel = _activeSort == sort;
+                    return PopupMenuItem<QuickSortOption>(
+                      value: sort,
+                      child: Row(
                         children: [
-                          Icon(Icons.create_new_folder_rounded, size: 14, color: Color(0xFF38BDF8)),
-                          SizedBox(width: 4),
+                          Icon(
+                            sort.icon,
+                            size: 15,
+                            color: isSel ? const Color(0xFF38BDF8) : Colors.white54,
+                          ),
+                          const SizedBox(width: 8),
                           Text(
-                            '+ / Manage',
+                            sort.label,
                             style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              fontSize: 12,
+                              color: isSel ? const Color(0xFF38BDF8) : Colors.white,
+                              fontWeight: isSel ? FontWeight.bold : FontWeight.normal,
                             ),
                           ),
                         ],
                       ),
+                    );
+                  }).toList(),
+                ),
+              ],
+            ),
+          ),
+
+          // 3. Compact Category Quick Filter Strip
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 3),
+            child: Row(
+              children: [
+                // Quick + Cat / Manage button
+                InkWell(
+                  onTap: () => _openAddCategoryDialog(),
+                  borderRadius: BorderRadius.circular(8),
+                  child: Container(
+                    height: 27,
+                    padding: const EdgeInsets.symmetric(horizontal: 8),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF1E3A8A), Color(0xFF2563EB)],
+                      ),
+                      borderRadius: BorderRadius.circular(8),
+                      border: Border.all(color: const Color(0xFF38BDF8), width: 0.8),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.create_new_folder_rounded, size: 13, color: Color(0xFF38BDF8)),
+                        SizedBox(width: 4),
+                        Text(
+                          '+ / Manage',
+                          style: TextStyle(fontSize: 10.5, fontWeight: FontWeight.bold, color: Colors.white),
+                        ),
+                      ],
                     ),
                   ),
                 ),
+                const SizedBox(width: 6),
                 ..._categories.map((cat) {
                   final isCatSelected = _selectedCategory == cat;
                   return Padding(
                     padding: const EdgeInsets.only(right: 6),
-                    child: GestureDetector(
+                    child: InkWell(
+                      onTap: () => setState(() => _selectedCategory = cat),
                       onLongPress: () {
-                        if (cat != 'All') {
-                          _openAddCategoryDialog();
-                        }
+                        if (cat != 'All') _openAddCategoryDialog();
                       },
-                      child: ChoiceChip(
-                        selected: isCatSelected,
-                        label: Text(
-                          cat,
-                          style: TextStyle(
-                            fontSize: 10.5,
-                            fontWeight: isCatSelected ? FontWeight.bold : FontWeight.normal,
-                            color: isCatSelected ? Colors.white : Colors.white60,
-                          ),
-                        ),
-                        backgroundColor: Colors.transparent,
-                        selectedColor: const Color(0xFF1E3A8A),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          side: BorderSide(
-                            color: isCatSelected ? const Color(0xFF38BDF8) : Colors.white12,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Container(
+                        height: 27,
+                        padding: const EdgeInsets.symmetric(horizontal: 10),
+                        decoration: BoxDecoration(
+                          color: isCatSelected ? const Color(0xFF1E3A8A) : const Color(0xFF0F172A),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isCatSelected ? const Color(0xFF38BDF8) : const Color(0xFF1E293B),
                             width: 0.8,
                           ),
                         ),
-                        onSelected: (val) {
-                          setState(() {
-                            _selectedCategory = cat;
-                          });
-                        },
+                        alignment: Alignment.center,
+                        child: Text(
+                          cat,
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: isCatSelected ? FontWeight.bold : FontWeight.normal,
+                            color: isCatSelected ? Colors.white : const Color(0xFF94A3B8),
+                          ),
+                        ),
                       ),
                     ),
                   );
@@ -2106,21 +2137,21 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     ),
                   )
                 : ListView.builder(
-                    padding: const EdgeInsets.only(left: 16, right: 16, top: 4, bottom: 65),
+                    padding: const EdgeInsets.only(left: 14, right: 14, top: 2, bottom: 80),
                     itemCount: filteredProducts.length,
                     itemBuilder: (context, index) {
                       final product = filteredProducts[index];
                       final isLow = product.quantity < 5; // Automatic RED styling when < 5
 
                       return Container(
-                        margin: const EdgeInsets.only(bottom: 10),
-                        padding: const EdgeInsets.all(14),
+                        margin: const EdgeInsets.only(bottom: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 13, vertical: 11),
                         decoration: BoxDecoration(
                           // Requirement 4: Automatic RED color for quantity drops below 5
                           color: isLow
                               ? const Color(0xFF280E14) // Deep Ruby Red Tint
                               : const Color(0xFF0F172A), // Luxury Dark Slate
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(14),
                           border: Border.all(
                             color: isLow
                                 ? const Color(0xFFEF4444) // Bright Red Border
@@ -2130,8 +2161,8 @@ class _InventoryScreenState extends State<InventoryScreen> {
                           boxShadow: [
                             BoxShadow(
                               color: isLow ? const Color(0xFFEF4444).withOpacity(0.12) : Colors.black.withOpacity(0.2),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
                             ),
                           ],
                         ),
@@ -2151,22 +2182,22 @@ class _InventoryScreenState extends State<InventoryScreen> {
                                               product.name,
                                               style: TextStyle(
                                                 fontWeight: FontWeight.bold,
-                                                fontSize: 15,
+                                                fontSize: 14.5,
                                                 color: isLow ? const Color(0xFFFCA5A5) : Colors.white,
                                               ),
                                             ),
                                           ),
                                           if (isLow)
                                             Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                                               decoration: BoxDecoration(
                                                 color: const Color(0xFFEF4444),
-                                                borderRadius: BorderRadius.circular(6),
+                                                borderRadius: BorderRadius.circular(5),
                                               ),
                                               child: const Text(
                                                 'LOW STOCK',
                                                 style: TextStyle(
-                                                  fontSize: 9,
+                                                  fontSize: 8.5,
                                                   fontWeight: FontWeight.w900,
                                                   color: Colors.white,
                                                 ),
@@ -2174,7 +2205,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                                             ),
                                         ],
                                       ),
-                                      const SizedBox(height: 5),
+                                      const SizedBox(height: 4),
 
                                       // Barcode row with Tap-to-Copy Feature
                                       GestureDetector(
@@ -2183,46 +2214,46 @@ class _InventoryScreenState extends State<InventoryScreen> {
                                           mainAxisSize: MainAxisSize.min,
                                           children: [
                                             Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 2),
                                               decoration: BoxDecoration(
                                                 color: const Color(0xFF1E293B),
-                                                borderRadius: BorderRadius.circular(6),
+                                                borderRadius: BorderRadius.circular(5),
                                                 border: Border.all(color: Colors.white12),
                                               ),
                                               child: Row(
                                                 mainAxisSize: MainAxisSize.min,
                                                 children: [
-                                                  const Icon(Icons.qr_code_rounded, size: 12, color: Color(0xFF38BDF8)),
-                                                  const SizedBox(width: 4),
+                                                  const Icon(Icons.qr_code_rounded, size: 11, color: Color(0xFF38BDF8)),
+                                                  const SizedBox(width: 3),
                                                   Text(
                                                     product.barcode,
                                                     style: const TextStyle(
-                                                      fontSize: 11,
+                                                      fontSize: 10.5,
                                                       fontFamily: 'monospace',
                                                       color: Colors.white70,
                                                     ),
                                                   ),
-                                                  const SizedBox(width: 4),
-                                                  const Icon(Icons.copy_rounded, size: 11, color: Colors.white38),
+                                                  const SizedBox(width: 3),
+                                                  const Icon(Icons.copy_rounded, size: 10, color: Colors.white38),
                                                 ],
                                               ),
                                             ),
-                                            const SizedBox(width: 8),
+                                            const SizedBox(width: 6),
                                             Text(
-                                              'â€¢ ${product.category}',
+                                              '| ${product.category}',
                                               style: TextStyle(
-                                                fontSize: 12,
+                                                fontSize: 11.5,
                                                 color: isLow ? const Color(0xFFF87171) : Colors.white54,
                                               ),
                                             ),
                                           ],
                                         ),
                                       ),
-                                      const SizedBox(height: 6),
+                                      const SizedBox(height: 5),
                                       Text(
-                                        'Price: ${_formatPrice(product.price)} â€¢ Valuation: ${_formatPrice(product.totalValue)}',
+                                        'Price: ${_formatPrice(product.price)}  |  Valuation: ${_formatPrice(product.totalValue)}',
                                         style: TextStyle(
-                                          fontSize: 12,
+                                          fontSize: 11.5,
                                           fontWeight: FontWeight.w600,
                                           color: isLow ? const Color(0xFFFCA5A5) : const Color(0xFF38BDF8),
                                         ),
@@ -2233,7 +2264,9 @@ class _InventoryScreenState extends State<InventoryScreen> {
                                 // Delete action button
                                 IconButton(
                                   tooltip: 'Delete Product',
-                                  icon: const Icon(Icons.delete_outline, size: 18, color: Colors.white30),
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+                                  icon: const Icon(Icons.delete_outline, size: 17, color: Colors.white30),
                                   onPressed: () {
                                     setState(() {
                                       _products.removeWhere((p) => p.id == product.id);
