@@ -3,12 +3,14 @@
 // Luxury Royal Sapphire Blue Theme (#2563EB / #38BDF8 / #080D1A)
 // ====================================================================
 
+import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:path_provider/path_provider.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -75,7 +77,86 @@ class Product {
 
   double get totalValue => quantity * price;
   bool get isLowStock => quantity < 5;
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'barcode': barcode,
+    'category': category,
+    'quantity': quantity,
+    'price': price,
+  };
+
+  factory Product.fromJson(Map<String, dynamic> json) => Product(
+    id: json['id']?.toString() ?? DateTime.now().millisecondsSinceEpoch.toString(),
+    name: json['name']?.toString() ?? '',
+    barcode: json['barcode']?.toString() ?? '',
+    category: json['category']?.toString() ?? 'General',
+    quantity: (json['quantity'] as num?)?.toInt() ?? 0,
+    price: (json['price'] as num?)?.toDouble() ?? 0.0,
+  );
 }
+
+const List<String> DEFAULT_CATEGORIES = [
+  'All',
+  'Audio Gear',
+  'Timepieces',
+  'Peripherals',
+  'Optics',
+  'Power & Tech',
+  'General',
+];
+
+List<Product> getDefaultProducts() => [
+  Product(
+    id: '1',
+    name: 'Aura Pro Studio Headphones',
+    barcode: '890123456012',
+    category: 'Audio Gear',
+    quantity: 14,
+    price: 349.99,
+  ),
+  Product(
+    id: '2',
+    name: 'Chronos Mechanical Chronograph',
+    barcode: '890123456029',
+    category: 'Timepieces',
+    quantity: 3, // < 5 -> Triggers RED row styling!
+    price: 1250.00,
+  ),
+  Product(
+    id: '3',
+    name: 'Titanium Ergonomic Keyboard',
+    barcode: '890123456036',
+    category: 'Peripherals',
+    quantity: 2, // < 5 -> Triggers RED row styling!
+    price: 289.50,
+  ),
+  Product(
+    id: '4',
+    name: 'Vanguard 4K Cinema Lens 50mm',
+    barcode: '890123456043',
+    category: 'Optics',
+    quantity: 1, // < 5 -> Triggers RED row styling!
+    price: 1890.00,
+  ),
+  Product(
+    id: '5',
+    name: 'Solarium Power Station 1200W',
+    barcode: '890123456050',
+    category: 'Power & Tech',
+    quantity: 18,
+    price: 799.00,
+  ),
+  Product(
+    id: '6',
+    name: 'Apex Precision Wireless Mouse',
+    barcode: '890123456067',
+    category: 'Peripherals',
+    quantity: 42,
+    price: 119.00,
+  ),
+];
 
 class AuraStockApp extends StatelessWidget {
   const AuraStockApp({super.key});
@@ -117,67 +198,191 @@ class _InventoryScreenState extends State<InventoryScreen> {
   CurrencyOption _selectedCurrency = CURRENCIES[0]; // Default USD, switchable to EGP
   QuickSortOption _activeSort = QuickSortOption.all;
   String _selectedCategory = 'All';
+  bool _isLoadingData = true;
 
-  final List<String> _categories = [
-    'All',
-    'Audio Gear',
-    'Timepieces',
-    'Peripherals',
-    'Optics',
-    'Power & Tech',
-    'General',
-  ];
+  final List<String> _categories = List<String>.from(DEFAULT_CATEGORIES);
+  final List<Product> _products = [];
 
-  final List<Product> _products = [
-    Product(
-      id: '1',
-      name: 'Aura Pro Studio Headphones',
-      barcode: '890123456012',
-      category: 'Audio Gear',
-      quantity: 14,
-      price: 349.99,
-    ),
-    Product(
-      id: '2',
-      name: 'Chronos Mechanical Chronograph',
-      barcode: '890123456029',
-      category: 'Timepieces',
-      quantity: 3, // < 5 -> Triggers RED row styling!
-      price: 1250.00,
-    ),
-    Product(
-      id: '3',
-      name: 'Titanium Ergonomic Keyboard',
-      barcode: '890123456036',
-      category: 'Peripherals',
-      quantity: 2, // < 5 -> Triggers RED row styling!
-      price: 289.50,
-    ),
-    Product(
-      id: '4',
-      name: 'Vanguard 4K Cinema Lens 50mm',
-      barcode: '890123456043',
-      category: 'Optics',
-      quantity: 1, // < 5 -> Triggers RED row styling!
-      price: 1890.00,
-    ),
-    Product(
-      id: '5',
-      name: 'Solarium Power Station 1200W',
-      barcode: '890123456050',
-      category: 'Power & Tech',
-      quantity: 18,
-      price: 799.00,
-    ),
-    Product(
-      id: '6',
-      name: 'Apex Precision Wireless Mouse',
-      barcode: '890123456067',
-      category: 'Peripherals',
-      quantity: 42,
-      price: 119.00,
-    ),
-  ];
+  static const String _storageFileName = 'aurastock_inventory_db.json';
+  static const String _prefKey = 'aurastock_offline_inventory_data';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadDataFromLocalStorage();
+  }
+
+  Future<File?> _getLocalDbFile() async {
+    try {
+      final dir = await getApplicationDocumentsDirectory();
+      return File('${dir.path}/$_storageFileName');
+    } catch (e) {
+      debugPrint('Error getting documents directory: $e');
+      return null;
+    }
+  }
+
+  Future<void> _loadDataFromLocalStorage() async {
+    try {
+      String? jsonContent;
+
+      // 1. Try reading from persistent local documents file
+      final file = await _getLocalDbFile();
+      if (file != null && await file.exists()) {
+        jsonContent = await file.readAsString();
+      }
+
+      // 2. Fallback to SharedPreferences if file was empty or missing
+      if (jsonContent == null || jsonContent.trim().isEmpty) {
+        try {
+          final prefs = await SharedPreferences.getInstance();
+          jsonContent = prefs.getString(_prefKey);
+        } catch (e) {
+          debugPrint('SharedPreferences read warning: $e');
+        }
+      }
+
+      // 3. Parse JSON data if found
+      if (jsonContent != null && jsonContent.trim().isNotEmpty) {
+        final Map<String, dynamic> data = jsonDecode(jsonContent);
+
+        // Load Products
+        if (data.containsKey('products') && data['products'] is List) {
+          final List<dynamic> pList = data['products'];
+          final loaded = pList.map((item) => Product.fromJson(item as Map<String, dynamic>)).toList();
+          _products.clear();
+          _products.addAll(loaded);
+        }
+
+        // Load Categories
+        if (data.containsKey('categories') && data['categories'] is List) {
+          final List<dynamic> cList = data['categories'];
+          final loadedCats = cList.map((e) => e.toString()).toList();
+          if (!loadedCats.contains('All')) {
+            loadedCats.insert(0, 'All');
+          }
+          _categories.clear();
+          _categories.addAll(loadedCats);
+        }
+
+        // Load Currency
+        if (data.containsKey('currencyCode')) {
+          final code = data['currencyCode']?.toString();
+          final curr = CURRENCIES.firstWhere(
+            (c) => c.code == code,
+            orElse: () => CURRENCIES[0],
+          );
+          _selectedCurrency = curr;
+        }
+      } else {
+        // Brand-new install: initialize with default demo products and save immediately
+        _products.clear();
+        _products.addAll(getDefaultProducts());
+        await _saveDataToLocalStorage();
+      }
+    } catch (e) {
+      debugPrint('Error loading saved inventory: $e');
+      if (_products.isEmpty) {
+        _products.addAll(getDefaultProducts());
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoadingData = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _saveDataToLocalStorage() async {
+    try {
+      final Map<String, dynamic> payload = {
+        'version': 1,
+        'lastUpdated': DateTime.now().toIso8601String(),
+        'currencyCode': _selectedCurrency.code,
+        'categories': _categories,
+        'products': _products.map((p) => p.toJson()).toList(),
+      };
+      final jsonStr = jsonEncode(payload);
+
+      // 1. Save to persistent documents file with flush: true (ensures physical disk write)
+      final file = await _getLocalDbFile();
+      if (file != null) {
+        await file.writeAsString(jsonStr, flush: true);
+      }
+
+      // 2. Dual-redundant backup in SharedPreferences
+      try {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(_prefKey, jsonStr);
+      } catch (e) {
+        debugPrint('SharedPreferences backup warning: $e');
+      }
+    } catch (e) {
+      debugPrint('Error saving inventory locally: $e');
+    }
+  }
+
+  Future<void> _resetToFactoryDefaults() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF0F172A),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+          side: const BorderSide(color: Color(0xFFEF4444), width: 1.5),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.restart_alt_rounded, color: Color(0xFFEF4444)),
+            SizedBox(width: 10),
+            Text('Reset to Default Data?', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+          ],
+        ),
+        content: const Text(
+          'This will restore the original demo products and reset categories. All your custom data will be replaced.',
+          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('Cancel', style: TextStyle(color: Colors.white60)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFDC2626),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('Yes, Reset'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true) {
+      setState(() {
+        _products.clear();
+        _products.addAll(getDefaultProducts());
+        _categories.clear();
+        _categories.addAll(DEFAULT_CATEGORIES);
+        _selectedCategory = 'All';
+        _searchQuery = '';
+        _searchController.clear();
+      });
+      await _saveDataToLocalStorage();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Color(0xFF0F172A),
+            behavior: SnackBarBehavior.floating,
+            content: Text('Inventory restored to default demo data! ðŸ”„'),
+          ),
+        );
+      }
+    }
+  }
 
   // 1. Total Financial Value Calculation
   double get totalFinancialValue {
@@ -243,15 +448,18 @@ class _InventoryScreenState extends State<InventoryScreen> {
     setState(() {
       product.quantity += 1;
     });
+    _saveDataToLocalStorage();
   }
 
   void _decrementQuantity(Product product) {
     if (product.quantity > 0) {
       HapticFeedback.mediumImpact();
+      final newQty = product.quantity - 1;
       setState(() {
-        product.quantity -= 1;
+        product.quantity = newQty;
       });
-      if (product.quantity < 5) {
+      _saveDataToLocalStorage();
+      if (newQty < 5) {
         _triggerAndroidLowStockNotification(product);
       }
     }
@@ -596,6 +804,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                                   ),
                                 );
                               });
+                              _saveDataToLocalStorage();
 
                               Navigator.pop(context);
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -721,6 +930,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                                   setState(() {
                                     _categories.add(cat);
                                   });
+                                  _saveDataToLocalStorage();
                                   setDialogState(() {});
                                 }
                                 if (onCategoryAdded != null) {
@@ -861,6 +1071,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                                                         _selectedCategory = 'All';
                                                       }
                                                     });
+                                                    _saveDataToLocalStorage();
                                                     setDialogState(() {});
                                                     Navigator.pop(confirmCtx);
                                                     ScaffoldMessenger.of(context).showSnackBar(
@@ -1484,6 +1695,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                             setState(() {
                               product.quantity = projectedQty;
                             });
+                            _saveDataToLocalStorage();
                             if (projectedQty < 5) {
                               _triggerAndroidLowStockNotification(product);
                             }
@@ -1562,6 +1774,25 @@ class _InventoryScreenState extends State<InventoryScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoadingData) {
+      return const Scaffold(
+        backgroundColor: Color(0xFF080D1A),
+        body: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(color: Color(0xFF38BDF8)),
+              SizedBox(height: 16),
+              Text(
+                'Loading AuraStock Inventory...',
+                style: TextStyle(color: Colors.white70, fontSize: 13, letterSpacing: 0.5),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: const Color(0xFF080D1A),
@@ -1609,6 +1840,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
               setState(() {
                 _selectedCurrency = curr;
               });
+              _saveDataToLocalStorage();
               HapticFeedback.selectionClick();
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
@@ -1691,10 +1923,10 @@ class _InventoryScreenState extends State<InventoryScreen> {
             onPressed: _openAddCategoryDialog,
           ),
 
-          // Export Reports Menu (CSV & PDF)
+          // Export & Settings Menu
           PopupMenuButton<String>(
-            tooltip: 'Export Reports',
-            icon: const Icon(Icons.download_rounded, color: Colors.white70, size: 20),
+            tooltip: 'Export & Settings',
+            icon: const Icon(Icons.more_vert_rounded, color: Colors.white70, size: 20),
             color: const Color(0xFF0F172A),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
@@ -1703,6 +1935,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
             onSelected: (val) {
               if (val == 'csv') _exportCSV();
               if (val == 'pdf') _exportPDF();
+              if (val == 'reset') _resetToFactoryDefaults();
             },
             itemBuilder: (context) => [
               const PopupMenuItem(
@@ -1722,6 +1955,17 @@ class _InventoryScreenState extends State<InventoryScreen> {
                     Icon(Icons.picture_as_pdf_outlined, color: Color(0xFF60A5FA), size: 18),
                     SizedBox(width: 10),
                     Text('Export as PDF', style: TextStyle(color: Colors.white)),
+                  ],
+                ),
+              ),
+              const PopupMenuDivider(height: 1),
+              const PopupMenuItem(
+                value: 'reset',
+                child: Row(
+                  children: [
+                    Icon(Icons.restart_alt_rounded, color: Color(0xFFEF4444), size: 18),
+                    SizedBox(width: 10),
+                    Text('Reset to Demo Data', style: TextStyle(color: Color(0xFFFCA5A5))),
                   ],
                 ),
               ),
@@ -2271,6 +2515,7 @@ class _InventoryScreenState extends State<InventoryScreen> {
                                     setState(() {
                                       _products.removeWhere((p) => p.id == product.id);
                                     });
+                                    _saveDataToLocalStorage();
                                   },
                                 ),
                               ],
